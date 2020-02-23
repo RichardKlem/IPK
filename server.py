@@ -20,9 +20,7 @@ def accept_incoming_connections():
     while True:
         client, client_address = SERVER.accept()
         msg = client.recv(BUFSIZ).decode("utf8")
-        print(msg)
         msg = msg.split("\n")[0]
-        print(msg)
         request = re.match(r"(GET|POST)", msg).group(1)
         if request == "GET":
             request_args = re.match(r"^GET /resolve\?name=(.*)&type=(.*) HTTP/1\.1", msg)
@@ -31,8 +29,14 @@ def accept_incoming_connections():
             else:
                 url_name = request_args.group(1)
                 url_type = request_args.group(2)
-                hostname, aliases, ipaddr_list = gethostbyname_ex(url_name)
-                result = "200 OK " + url_name + ":" + url_type + "=" + ipaddr_list[0]
+                if url_type == "A":
+                    hostname, aliases, ipaddr_list = gethostbyname_ex(url_name)
+                    result = "200 OK " + url_name + ":" + url_type + "=" + ipaddr_list[0]
+                elif url_type == "PTR":
+                    url_hostname = gethostbyaddr(url_name)
+                    result = "200 OK " + url_name + ":" + url_type + "=" + url_hostname
+                else:
+                    result = "400 Bad Request"
             client.send(bytes(result, "utf8"))
         elif request == "POST":
             pass
