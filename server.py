@@ -20,6 +20,7 @@ def accept_incoming_connections():
     while True:
         client, client_address = SERVER.accept()
         msg = client.recv(BUFSIZ).decode("utf8")
+        print(msg)
         msg = msg.split("\n")[0]
         print(msg)
         request = re.match(r"(GET|POST)", msg).group(1)
