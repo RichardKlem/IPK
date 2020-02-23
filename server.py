@@ -34,6 +34,7 @@ def accept_incoming_connections():
                     result = "200 OK " + url_name + ":" + url_type + "=" + ipaddr_list[0]
                 elif url_type == "PTR":
                     hostname, _, _ = gethostbyaddr(url_name)
+                    print(url_name)
                     result = "200 OK " + url_name + ":" + url_type + "=" + hostname
                 else:
                     result = "400 Bad Request"
