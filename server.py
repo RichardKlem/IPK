@@ -30,11 +30,11 @@ def accept_incoming_connections():
                 url_name = request_args.group(1)
                 url_type = request_args.group(2)
                 if url_type == "A":
-                    hostname, aliases, ipaddr_list = gethostbyname_ex(url_name)
+                    _, _, ipaddr_list = gethostbyname_ex(url_name)
                     result = "200 OK " + url_name + ":" + url_type + "=" + ipaddr_list[0]
                 elif url_type == "PTR":
-                    url_hostname = gethostbyaddr(url_name)
-                    result = "200 OK " + url_name + ":" + url_type + "=" + url_hostname
+                    hostname, _, _ = gethostbyaddr(url_name)
+                    result = "200 OK " + url_name + ":" + url_type + "=" + hostname
                 else:
                     result = "400 Bad Request"
             client.send(bytes(result, "utf8"))
