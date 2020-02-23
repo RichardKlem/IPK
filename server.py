@@ -20,27 +20,27 @@ def accept_incoming_connections():
     while True:
         client, client_address = SERVER.accept()
         msg = client.recv(BUFSIZ).decode("utf8")
-        msg_list = msg.split("\n")
-        msg = msg_list[0]
-        #client.send(bytes("Greetings from the cave! Now type your name and press enter!", "utf8"))
-        request = re.match(r"(GET|POST) /resolve\?name=(.*)&type=(.*) HTTP/1.1", msg)
-        url_method = request.group(1)
-        url_name = request.group(2)
-        url_type = request.group(3)
-        print(url_method, url_name, url_type)
-        """
-        if not :
+        msg = msg.split("\n")[0]
+        request = re.match(r"(GET|POST)", msg)
+        if request == "GET":
+            request_args = re.match(r"^GET /resolve\?name=(.*)&type=(.*) HTTP/1\.1", msg)
+            if len(request_args.groups()) != 2:
+                result = "400 Bad Request"
+            else:
+                url_name = request_args.group(1)
+                url_type = request_args.group(2)
+                hostname, aliases, ipaddr_list = gethostbyname_ex(url_name)
+                result = "200 OK " + url_name + ":" + url_type + "=" + ipaddr_list[0]
+            client.send(bytes(result, "utf8"))
+        elif request == "POST":
+            pass
+        else:
             exit("405 Method Not Allowed")
-        elif request_type == 'GET':
 
-        else:"""
-
-        if msg != bytes("{GET /resolve?name=apple.com&type=A HTTP/1.1}", "utf8"):
-            print("Eeeooooo")
-            exit(0)
+        #hostname, aliases, ipaddr_list = gethostbyname_ex(url_name)
+        #print(url_method, url_name, url_type)
         exit(0)
-        hostname, aliases, ipaddr_list = gethostbyname_ex(
-                "www.fit.vutbr.cz")
+        hostname, aliases, ipaddr_list = gethostbyname_ex(url_name)
         # ipaddr = socket.gethostbyaddr(ipaddr_list[0])
 
         print(hostname, aliases, ipaddr_list)
