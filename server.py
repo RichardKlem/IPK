@@ -27,6 +27,7 @@ def accept_incoming_connections():
         url_method = request.group(1)
         url_name = request.group(2)
         url_type = request.group(3)
+        print(url_method, url_name, url_type)
         """
         if not :
             exit("405 Method Not Allowed")
