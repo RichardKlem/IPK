@@ -21,13 +21,15 @@ def accept_incoming_connections():
         client, client_address = SERVER.accept()
         print("%s:%s has connected." % client_address)
         msg = client.recv(BUFSIZ).decode("utf8")
-        msg = msg.split("\n")[0]
+        msg_list = msg.split("\n")
+        msg = msg_list[0]
         #client.send(bytes("Greetings from the cave! Now type your name and press enter!", "utf8"))
         request = re.match(r"(GET|POST) /resolve\?name=(.*)&type=(.*) HTTP/1.1",
                                 msg)
         #url_method = request.group(1)
         #url_name = request.group(2)
         #url_type = request.group(3)
+        print(msg_list)
         print(request)
         """
         if not :
