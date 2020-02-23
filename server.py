@@ -19,18 +19,14 @@ def accept_incoming_connections():
     """Sets up handling for incoming clients"""
     while True:
         client, client_address = SERVER.accept()
-        print("%s:%s has connected." % client_address)
         msg = client.recv(BUFSIZ).decode("utf8")
         msg_list = msg.split("\n")
         msg = msg_list[0]
         #client.send(bytes("Greetings from the cave! Now type your name and press enter!", "utf8"))
-        request = re.match(r"(GET|POST) /resolve\?name=(.*)&type=(.*) HTTP/1.1",
-                                msg)
-        #url_method = request.group(1)
-        #url_name = request.group(2)
-        #url_type = request.group(3)
-        print(msg_list)
-        print(request)
+        request = re.match(r"(GET|POST) /resolve\?name=(.*)&type=(.*) HTTP/1.1", msg)
+        url_method = request.group(1)
+        url_name = request.group(2)
+        url_type = request.group(3)
         """
         if not :
             exit("405 Method Not Allowed")
@@ -41,7 +37,7 @@ def accept_incoming_connections():
         if msg != bytes("{GET /resolve?name=apple.com&type=A HTTP/1.1}", "utf8"):
             print("Eeeooooo")
             exit(0)
-
+        exit(0)
         hostname, aliases, ipaddr_list = gethostbyname_ex(
                 "www.fit.vutbr.cz")
         # ipaddr = socket.gethostbyaddr(ipaddr_list[0])
