@@ -24,6 +24,7 @@ def accept_incoming_connections():
         request = re.match(r"(GET|POST)", msg).group(1)
         if request == "GET":
             request_args = re.match(r"^GET /resolve\?name=(.*)&type=(.*) HTTP/1\.1", msg)
+            print(msg)
             if len(request_args.groups()) != 2:
                 result = "400 Bad Request"
             else:
