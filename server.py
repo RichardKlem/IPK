@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
 from socket import *
+from ipaddress import ip_address
 import re
 
 clients = {}
-addresses = {}
+
 
 HOST = ''
 PORT = 5353
@@ -33,9 +34,12 @@ def accept_incoming_connections():
                     _, _, ipaddr_list = gethostbyname_ex(url_name)
                     result = "200 OK " + url_name + ":" + url_type + "=" + ipaddr_list[0]
                 elif url_type == "PTR":
-                    hostname, _, _ = gethostbyaddr(url_name)
-                    print(url_name)
-                    result = "200 OK " + url_name + ":" + url_type + "=" + hostname
+                    try:
+                        ip_address(url_name)
+                        hostname, _, _ = gethostbyaddr(url_name)
+                        result = "200 OK " + url_name + ":" + url_type + "=" + hostname
+                    except ValueError:
+                        result = "500 Internal Server Error"
                 else:
                     result = "400 Bad Request"
             client.send(bytes(result, "utf8"))
@@ -89,3 +93,6 @@ if __name__ == "__main__":
 
 
 "curl localhost:5353/resolve?name=www.fit.vutbr.cz\&type=A"
+
+#getnameinfo()
+#inet_aton()
