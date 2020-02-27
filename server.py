@@ -23,6 +23,7 @@ def accept_incoming_connections():
         msg = client.recv(BUFSIZ).decode("utf8")
         msg = msg.split("\n")[0]
         request = re.match(r"(GET|POST)", msg).group(1)
+        print(msg)
         if request == "GET":
             request_args = re.match(r"^GET /resolve\?name=(.*)&type=(.*) HTTP/1\.1", msg)
             if len(request_args.groups()) != 2:
