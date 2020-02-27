@@ -44,7 +44,7 @@ def accept_incoming_connections():
                     result = "400 Bad Request"
             client.send(bytes(result, "utf8"))
         elif request == "POST":
-            pass
+            print(msg)
         else:
             exit("405 Method Not Allowed")
 
