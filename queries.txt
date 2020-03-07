@@ -1,5 +1,7 @@
 www.fit.vutbr.cz:A
-www.google.com:A
-www.seznam.cz:A
-147.229.14.131:PTR
+www.google.com     :      A
+www.seznam.cz       :A
+147.229.14.131:    A
 ihned.cz:A
+a-a.com:A
+www.fit.vutbr.cz:AJAJAJ

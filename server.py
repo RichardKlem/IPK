@@ -1,28 +1,29 @@
-from time import sleep
+import traceback
 from socket import *
 from ipaddress import ip_address
 import re
-from socketserver import TCPServer
+import sys
+
 clients = {}
 
 HOST = ''
-PORT = 5353
+PORT = int(sys.argv[1])
 BUFSIZ = 1024
 ADDR = (HOST, PORT)
 SERVER = socket(AF_INET, SOCK_STREAM)
 SERVER.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 SERVER.bind(ADDR)
 
-http = "HTTP/1.1"
+http = "HTTP/1.1 "
 r200 = "200 OK\n"
 r400 = "400 Bad Request\n"
 r404 = "404 Not Found\n"
+r405 = "405 Method Not Allowed\n"
 r500 = "500 Internal Server Error\n"
 
 
-
 def accept_incoming_connections():
-    """Sets up handling for incoming clients"""
+    """Sets up handling for incoming connections"""
     while True:
         client, client_address = SERVER.accept()
         msg = client.recv(BUFSIZ).decode("utf8")
@@ -43,7 +44,8 @@ def accept_incoming_connections():
                     try:
                         _, _, ipaddr_list = gethostbyname_ex(url_name)
                         header = http + r200
-                        result = header + "\n" + url_name + ":" + url_type + "=" + ipaddr_list[0] + "\n"
+                        response = url_name + ":" + url_type + "=" + ipaddr_list[0] + "\n"
+                        result = header + "\n" + response
                     except OSError:
                         result = r404
 
@@ -52,48 +54,76 @@ def accept_incoming_connections():
                         ip_address(url_name)  # check if IP format is valid
                         try:
                             hostname, _, _ = gethostbyaddr(url_name)
-                            result = "HTTP/1.1 200 OK\n" + url_name + ":" + url_type + "=" + hostname + "\n"
+                            header = http + r200
+                            response = url_name + ":" + url_type + "=" + hostname + "\n"
+                            result = header + "\n" + response
                         except OSError:
+                            traceback.print_tb()
                             result = r404
                     except ValueError:
                         result = r400
 
             client.send(bytes(result, "utf8"))
 
+
         elif request == "POST":
             result = r400
             if (re.match(r"^POST /dns-query HTTP/1.1", msg)) is None:
-                client.send(bytes(result, "utf8"))
+                client.send(bytes(http + result, "utf8"))
             else:
-                msg = msg.split("\n")[7:]
+                tmp_msg = msg.split("\n")[7:]
+                msg = []
+                for line in tmp_msg:
+                    # if the line is fill with whitespaces and/or newline, pop this from list
+                    if re.match(r"^.*\w+.*$", line) is not None:
+                        msg.append(line)
+                    else:
+                        result = 400400
+                        break
+                if result == 400400:
+                    client.send(bytes(http + r400, "utf8"))
+                else:
+                    result_list = []
+                    for query in msg:
+                        request_args = re.match(r"^(\S*)(?:\s*):(?:\s*)(\w*)", query)
+                        if request_args is None:
+                            continue
+                        url_name = request_args.group(1)
+                        url_type = request_args.group(2)
+                        if url_type == "A":
 
-                for query in msg:
-                    request_args = re.match(r"^(.*):(.*)", query)
-                    url_name = request_args.group(1)
-                    url_type = request_args.group(2)
-                    if url_type == "A":
-                        _, _, ipaddr_list = gethostbyname_ex(url_name)
-                        result = "200 OK " + url_name + ":" + url_type + "=" + ipaddr_list[
-                            0] + "\n"
-                    elif url_type == "PTR":
-                        try:
-                            ip_address(url_name)
-                            hostname, _, _ = gethostbyaddr(url_name)
-                            result = "200 OK " + url_name + ":" + url_type + "=" + hostname + "\n"
-                        except ValueError:
-                            result = "500 Internal Server Errorn\n"
-                            # result = "400 Bad Request"
-                    client.send(bytes(result, "utf8"))
+                            print("\n___", getaddrinfo(url_name, port=80), "___")
+
+                            if re.match(r"^\w*\.(\w(-\w)?\.)*\w+$", url_name):
+                                _, _, ipaddr_list = gethostbyname_ex(url_name)
+                                response = url_name + ":" + url_type + "=" + ipaddr_list[0] + "\n"
+                                result_list.append(response)
+                                print("A\n")
+                            else:
+
+                                continue
+                        elif url_type == "PTR":
+                            try:
+                                ip_address(url_name)
+                                hostname, _, _ = gethostbyaddr(url_name)
+                                response = url_name + ":" + url_type + "=" + hostname + "\n"
+                                result_list.append(response)
+                                print("PTR\n")
+                            except ValueError:
+                                continue
+                        else:
+                            continue
+                    if len(result_list) != 0:
+                        client.send(bytes(http + r200 + "\n", "utf8"))
+                        print("\n...", result_list)
+                        for result in result_list:
+                            client.send(bytes(result, "utf8"))
+                    else:
+                        client.send(bytes(http + r400, "utf8"))
         else:
-            exit("405 Method Not Allowed\n")
+            client.send(bytes(http + r405, "utf8"))
 
         client.close()
-        # hostname, aliases, ipaddr_list = gethostbyname_ex(url_name)
-        # print(url_method, url_name, url_type)
-        # hostname, aliases, ipaddr_list = gethostbyname_ex(url_name)
-        # ipaddr = socket.gethostbyaddr(ipaddr_list[0])
-
-        # print(hostname, aliases, ipaddr_list)
 
 
 if __name__ == "__main__":
@@ -109,29 +139,4 @@ if __name__ == "__main__":
 # inet_aton()
 
 
-def handle_client(client):  # takes socket as argument.
-    """Handles a single client connection."""
-    name = client.recv(BUFSIZ).decode("utf8")
-    welcome = name
-    client.send(bytes(welcome, "utf8"))
-    msg = "%s has joined the chat!" % name
-    broadcast(bytes(msg, "utf8"))
-    client[client] = name
-
-    while True:
-        msg = client.recv(BUFSIZ)
-
-        if msg != bytes("{quit}", "utf8"):
-            broadcast(msg, name + ": ")
-        else:
-            client.send(bytes("{quit}", "utf8"))
-            client.close()
-            del clients[client]
-            broadcast(bytes("%s has left the chat." % name, "utf8"))
-            break
-
-
-def broadcast(msg, prefix=""):  # prefix is for name identification.
-    """broadcast a message to all the clients."""
-    for sock in clients:
-        sock.send(bytes(prefix, "utf8") + msg)
+r"^\w*\.(\w(\-\w)?\.)*\w+$"
