@@ -1,4 +1,3 @@
-import traceback
 from socket import *
 from ipaddress import ip_address
 import re
@@ -27,7 +26,6 @@ def accept_incoming_connections():
     while True:
         client, client_address = SERVER.accept()
         msg = client.recv(BUFSIZ).decode("utf8")
-        print(msg)
         request = re.match(r"^(GET|POST)", msg).group(1)
 
         if request == "GET":
@@ -58,13 +56,11 @@ def accept_incoming_connections():
                             response = url_name + ":" + url_type + "=" + hostname + "\n"
                             result = header + "\n" + response
                         except OSError:
-                            traceback.print_tb()
                             result = r404
                     except ValueError:
                         result = r400
 
             client.send(bytes(result, "utf8"))
-
 
         elif request == "POST":
             result = r400
@@ -73,15 +69,19 @@ def accept_incoming_connections():
             else:
                 tmp_msg = msg.split("\n")[7:]
                 msg = []
+                resultos = 0
                 for line in tmp_msg:
                     # if the line is fill with whitespaces and/or newline, pop this from list
-                    if re.match(r"^.*\w+.*$", line) is not None:
+                    res = re.match(r"^\s*\S+.*$", line)
+                    if res is not None:
                         msg.append(line)
                     else:
-                        result = 400400
+                        resultos = 400400
                         break
-                if result == 400400:
-                    client.send(bytes(http + r400, "utf8"))
+
+                error_list = []
+                if resultos == 400400:
+                    error_list.append(r400)
                 else:
                     result_list = []
                     for query in msg:
@@ -91,35 +91,41 @@ def accept_incoming_connections():
                         url_name = request_args.group(1)
                         url_type = request_args.group(2)
                         if url_type == "A":
-
-                            print("\n___", getaddrinfo(url_name, port=80), "___")
-
-                            if re.match(r"^\w*\.(\w(-\w)?\.)*\w+$", url_name):
+                            try:
                                 _, _, ipaddr_list = gethostbyname_ex(url_name)
                                 response = url_name + ":" + url_type + "=" + ipaddr_list[0] + "\n"
                                 result_list.append(response)
-                                print("A\n")
-                            else:
-
+                            except OSError:
+                                error_list.append(r404)
                                 continue
                         elif url_type == "PTR":
                             try:
-                                ip_address(url_name)
-                                hostname, _, _ = gethostbyaddr(url_name)
-                                response = url_name + ":" + url_type + "=" + hostname + "\n"
-                                result_list.append(response)
-                                print("PTR\n")
+                                ip_address(url_name)  # check if IP format is valid
+                                try:
+                                    hostname, _, _ = gethostbyaddr(url_name)
+                                    response = url_name + ":" + url_type + "=" + hostname + "\n"
+                                    result_list.append(response)
+                                except OSError:
+                                    error_list.append(r404)
                             except ValueError:
+                                error_list.append(r400)
                                 continue
                         else:
+                            error_list.append(r400)
                             continue
+
                     if len(result_list) != 0:
                         client.send(bytes(http + r200 + "\n", "utf8"))
-                        print("\n...", result_list)
-                        for result in result_list:
-                            client.send(bytes(result, "utf8"))
+                        #print("\n...", result_list)
+                        for answer in result_list:
+                            client.send(bytes(answer, "utf8"))
                     else:
-                        client.send(bytes(http + r400, "utf8"))
+                        if r400 in error_list:
+                            client.send(bytes(http + r400, "utf8"))
+                        elif r404 in error_list:
+                            client.send(bytes(http + r404, "utf8"))
+                        else:
+                            client.send(bytes(http + r500, "utf8"))
         else:
             client.send(bytes(http + r405, "utf8"))
 
@@ -127,15 +133,11 @@ def accept_incoming_connections():
 
 
 if __name__ == "__main__":
-    SERVER.listen(1)  # Listen for 1 connections at max.
-    print("Waiting for connection...")
+    SERVER.listen(1)  # Listen for 1 connection
+    #print("Waiting for connection...")
     accept_incoming_connections()
     SERVER.close()
 
-"curl localhost:5353/resolve?name=www.fit.vutbr.cz\&type=A"
-
-
-# getnameinfo()
 # inet_aton()
 
 
