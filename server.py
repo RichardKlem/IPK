@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-
+from time import sleep
 from socket import *
 from ipaddress import ip_address
 import re
@@ -21,41 +20,77 @@ def accept_incoming_connections():
     while True:
         client, client_address = SERVER.accept()
         msg = client.recv(BUFSIZ).decode("utf8")
-        msg = msg.split("\n")[0]
-        request = re.match(r"(GET|POST)", msg).group(1)
-        print(msg)
+        request = re.match(r"^(GET|POST)", msg).group(1)
+
         if request == "GET":
+            msg = msg.split("\n")[0]
             request_args = re.match(r"^GET /resolve\?name=(.*)&type=(.*) HTTP/1\.1", msg)
+            result = "400 Bad Request\n"
             if len(request_args.groups()) != 2:
-                result = "400 Bad Request"
+                pass
             else:
                 url_name = request_args.group(1)
                 url_type = request_args.group(2)
+                result = "400 Bad Request\n"
                 if url_type == "A":
                     _, _, ipaddr_list = gethostbyname_ex(url_name)
-                    result = "200 OK " + url_name + ":" + url_type + "=" + ipaddr_list[0]
+                    result = "200 OK " + url_name + ":" + url_type + "=" + ipaddr_list[0] + "\n"
                 elif url_type == "PTR":
                     try:
                         ip_address(url_name)
                         hostname, _, _ = gethostbyaddr(url_name)
-                        result = "200 OK " + url_name + ":" + url_type + "=" + hostname
+                        result = "200 OK " + url_name + ":" + url_type + "=" + hostname + "\n"
                     except ValueError:
-                        result = "500 Internal Server Error"
-                else:
-                    result = "400 Bad Request"
+                        result = "500 Internal Server Error\n"
+                        #result = "400 Bad Request"
             client.send(bytes(result, "utf8"))
-        elif request == "POST":
-            print(msg)
-        else:
-            exit("405 Method Not Allowed")
 
+        elif request == "POST":
+            result = "400 Bad Request\n"
+            if (re.match(r"^POST /dns-query HTTP/1.1", msg)) is None:
+                client.send(bytes(result, "utf8"))
+            else:
+                msg = msg.split("\n")[7:]
+
+                for query in msg:
+                    request_args = re.match(r"^(.*):(.*)", query)
+                    url_name = request_args.group(1)
+                    url_type = request_args.group(2)
+                    if url_type == "A":
+                        _, _, ipaddr_list = gethostbyname_ex(url_name)
+                        result = "200 OK " + url_name + ":" + url_type + "=" + ipaddr_list[0] + "\n"
+                    elif url_type == "PTR":
+                        try:
+                            ip_address(url_name)
+                            hostname, _, _ = gethostbyaddr(url_name)
+                            result = "200 OK " + url_name + ":" + url_type + "=" + hostname + "\n"
+                        except ValueError:
+                            result = "500 Internal Server Errorn\n"
+                            #result = "400 Bad Request"
+                    client.send(bytes(result, "utf8"))
+        else:
+            exit("405 Method Not Allowed\n")
+
+        client.close()
         #hostname, aliases, ipaddr_list = gethostbyname_ex(url_name)
         #print(url_method, url_name, url_type)
-        exit(0)
-        hostname, aliases, ipaddr_list = gethostbyname_ex(url_name)
+        #hostname, aliases, ipaddr_list = gethostbyname_ex(url_name)
         # ipaddr = socket.gethostbyaddr(ipaddr_list[0])
 
-        print(hostname, aliases, ipaddr_list)
+        #print(hostname, aliases, ipaddr_list)
+
+
+if __name__ == "__main__":
+    SERVER.listen(1)  # Listen for 1 connections at max.
+    print("Waiting for connection...")
+    accept_incoming_connections()
+    SERVER.close()
+
+
+"curl localhost:5353/resolve?name=www.fit.vutbr.cz\&type=A"
+
+#getnameinfo()
+#inet_aton()
 
 
 def handle_client(client):  # takes socket as argument.
@@ -85,15 +120,3 @@ def broadcast(msg, prefix=""):  # prefix is for name identification.
     for sock in clients:
         sock.send(bytes(prefix, "utf8")+msg)
 
-
-if __name__ == "__main__":
-    SERVER.listen(1)  # Listen for 1 connections at max.
-    print("Waiting for connection...")
-    accept_incoming_connections()
-    SERVER.close()
-
-
-"curl localhost:5353/resolve?name=www.fit.vutbr.cz\&type=A"
-
-#getnameinfo()
-#inet_aton()
