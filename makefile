@@ -1,4 +1,4 @@
 PORT=5353
 build:
 all:
-	python3 server.py $(PORT)
+	python3 src/server.py $(PORT)
