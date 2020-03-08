@@ -88,3 +88,6 @@ příkaz implikoval tento _status code_. V situaci, kdy se nepodařilo<br>
 přeložit ani jeden dotaz, ale žádný neskončil se _status code_<br>
  `400 Bad Request`, je navrácen _status code_ `404 Not Found`.
  
+ 
+ ##Popis průběhu programu
+ 

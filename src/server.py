@@ -60,7 +60,7 @@ def accept_incoming_connections():
                     except ValueError:
                         result = r400
 
-            client.send(bytes(result, "utf8"))
+            client.send(bytes(result + "\n", "utf8"))
 
         elif request == "POST":
             result = r400
@@ -87,7 +87,7 @@ def accept_incoming_connections():
                 else:
                     result_list = []
                     for query in msg:
-                        request_args = re.match(r"^(\S*)(?:\s*):(?:\s*)(\w*)", query)
+                        request_args = re.match(r"^(\S*)(?:\s*):(?:\s*)(\w*)$", query)
                         if request_args is None:
                             continue
                         url_name = request_args.group(1)
@@ -122,18 +122,21 @@ def accept_incoming_connections():
                             client.send(bytes(answer, "utf8"))
                     else:
                         if r400 in error_list:
-                            client.send(bytes(http + r400, "utf8"))
+                            client.send(bytes(http + r400 + "\n", "utf8"))
                         elif r404 in error_list:
-                            client.send(bytes(http + r404, "utf8"))
+                            client.send(bytes(http + r404 + "\n", "utf8"))
                         else:
-                            client.send(bytes(http + r500, "utf8"))
+                            client.send(bytes(http + r500 + "\n", "utf8"))
         else:
-            client.send(bytes(http + r405, "utf8"))
+            client.send(bytes(http + r405 + "\n", "utf8"))
 
         client.close()
 
 
 if __name__ == "__main__":
     SERVER.listen(1)  # Listen for 1 connection
-    accept_incoming_connections()
+    try:
+        accept_incoming_connections()
+    except KeyboardInterrupt:
+        sys.exit()
     SERVER.close()
