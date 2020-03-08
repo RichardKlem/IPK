@@ -1,4 +1,4 @@
-from socket import *
+from socket import gethostbyname_ex, gethostbyaddr, socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from ipaddress import ip_address
 import re
 import sys
@@ -22,7 +22,6 @@ r500 = "500 Internal Server Error\n"
 
 
 def accept_incoming_connections():
-    """Sets up handling for incoming connections"""
     while True:
         client, client_address = SERVER.accept()
         msg = client.recv(BUFSIZ).decode("utf8")
