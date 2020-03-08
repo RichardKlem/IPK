@@ -88,6 +88,17 @@ příkaz implikoval tento _status code_. V situaci, kdy se nepodařilo<br>
 přeložit ani jeden dotaz, ale žádný neskončil se _status code_<br>
  `400 Bad Request`, je navrácen _status code_ `404 Not Found`.
  
+V případě, že se prázdný řádek vyskytl na začátku nebo uprostřed<br>
+seznamu dotazů nebo za posledním(mimo jeden povolený) dotazem v seznamu<br>
+dotazů, je navrácen _status code_ `400 Bad Request` a to **bez seznamu<br>
+odpovědí**!
+ 
  
  ##Popis průběhu programu
- 
+ Skript namapuje server na zadanou nebo implicitní hodnotu portu.<br>
+ Na tomto portu bude server běžet dokud ho uživatel neukončí pomocí<br>
+ signálu SIGINT napřílad pomocí "_Ctrl + C_".<br>
+ Program sestává z jedné funkce, v které běží v nekonečné smyčce, kde<br>
+ čeká na příchozí soket, který zpracuje se souladem s popisem v části<br>
+ **_Podporované operace_** a následně je připraven na přijmutí dalšího<br>
+ soketu.
