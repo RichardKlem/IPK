@@ -38,17 +38,21 @@ def accept_incoming_connections():
                 url_type = request_args.group(2)
                 result = r400
                 if url_type == "A":
+                    # když nastane vyjimka, nejedna se o IP a můžeme zkusit najit IP podle jmena
                     try:
-                        _, _, ipaddr_list = gethostbyname_ex(url_name)
-                        header = http + r200
-                        response = url_name + ":" + url_type + "=" + ipaddr_list[0] + "\n"
-                        result = header + "\n" + response
-                    except OSError:
-                        result = r404
+                        ip_address(url_name)
+                    except ValueError:
+                        try:
+                            _, _, ipaddr_list = gethostbyname_ex(url_name)
+                            header = http + r200
+                            response = url_name + ":" + url_type + "=" + ipaddr_list[0] + "\n"
+                            result = header + "\n" + response
+                        except OSError:
+                            result = r404
 
                 elif url_type == "PTR":
                     try:
-                        ip_address(url_name)  # only check if IP format is valid
+                        ip_address(url_name)
                         try:
                             hostname, _, _ = gethostbyaddr(url_name)
                             header = http + r200
@@ -72,7 +76,6 @@ def accept_incoming_connections():
                 msg = []
                 resultos = 0
                 for line in tmp_msg:
-                    # if the line is not filled with whitespaces and/or newline, add it to a list
                     res = re.match(r"^\s*\S+.*$", line)
                     if res is not None:
                         msg.append(line)
@@ -92,13 +95,17 @@ def accept_incoming_connections():
                         url_name = request_args.group(1)
                         url_type = request_args.group(2)
                         if url_type == "A":
+                            # když nastane vyjimka, nejedna se o IP a můžeme zkusit najit IP podle jmena
                             try:
-                                _, _, ipaddr_list = gethostbyname_ex(url_name)
-                                response = url_name + ":" + url_type + "=" + ipaddr_list[0] + "\n"
-                                result_list.append(response)
-                            except OSError:
-                                error_list.append(r404)
-                                continue
+                                ip_address(url_name)
+                            except ValueError:
+                                try:
+                                    _, _, ipaddr_list = gethostbyname_ex(url_name)
+                                    response = url_name + ":" + url_type + "=" + ipaddr_list[0] + "\n"
+                                    result_list.append(response)
+                                except OSError:
+                                    error_list.append(r404)
+                                    continue
                         elif url_type == "PTR":
                             try:
                                 ip_address(url_name)  # check if IP format is valid
