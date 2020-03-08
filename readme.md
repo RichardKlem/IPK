@@ -1,5 +1,5 @@
 # IPK projekt 1 - HTTP resolver doménových jmen
-##Obecné informace
+## Obecné informace
 Autor: Richard Klem<br>
 Login: xklemr00<br>
 Email: xklemr00@stud.fit.vutbr.cz<br>
@@ -7,25 +7,25 @@ Email: xklemr00@stud.fit.vutbr.cz<br>
 Jazyk: Python<br>
 Verze jazyka: 3.6.9<br>
 
-##Prerekvizity
+## Prerekvizity
 Python 3.6.9<br>
 GNU make<br>
 
-##Spuštění
+## Spuštění
 `make run PORT=XYZ`
 
 kde `XYZ` značí celé číslo portu, který má skript server.py obsluhovat<br>
 implicitní hodnota proměnné PORT je rovna 5353
 
-##Podporované operace
-###Upozornění
+## Podporované operace
+### Upozornění
 Část **_Podporované operace_** částečně opakuje zadání projektu, avšak <br>
 původní text je parafrázován a hojně doplněn o popis mé vlastní implementace<br>
 případů, stavů, možností apod., které nebyli v zadání specifikovány.<br>
 Je tedy důležité, přečíst si popis mojí implementace, pro správné<br>
 pochopení, jak konkrétně moje implementace serveru funguje a jaké jsou<br>
 doplňující požadavky, rozšíření a omezení na práci se serverem.
-###GET<br>
+### GET<br>
 Přeloží právě jeden dotaz, který je specifikován jako parametr URL požadavku,<br>
 například:
  
@@ -51,7 +51,7 @@ Není-li odpověď nalezena, vrací se _status code_ `404 Not Found`.<br>
 Je-li zadán některý parametr chybně nebo chybí, vrací se  _status code_<br>
 `400 Bad Request`.
 
-###POST<br>
+### POST<br>
 Metoda **POST** obsahuje v těle požadavku seznam dotazů, každý musí být<br>
 na samostatném řádku. Seznam nesmí být proložen žádnými prázdnými řádky<br>
 ani jimi nesmí začínat. Na konci seznamu je povoleno jedno odřádkování.<br>
@@ -94,7 +94,7 @@ dotazů, je navrácen _status code_ `400 Bad Request` a to **bez seznamu<br>
 odpovědí**!
  
  
- ##Popis průběhu programu
+ ## Popis průběhu programu
  Skript namapuje server na zadanou nebo implicitní hodnotu portu.<br>
  Na tomto portu bude server běžet dokud ho uživatel neukončí pomocí<br>
  signálu SIGINT napřílad pomocí "_Ctrl + C_".<br>
