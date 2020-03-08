@@ -71,6 +71,7 @@ def accept_incoming_connections():
                 client.send(bytes(http + result, "utf8"))
             else:
                 tmp_msg = msg.split("\n")[7:]
+                # Ošetření odřádování na posledním řádku těla seznamu dotazů
                 if tmp_msg[len(tmp_msg)-1] == "":
                     tmp_msg.pop()
                 msg = []
@@ -86,6 +87,8 @@ def accept_incoming_connections():
                 error_list = []
                 if resultos == 400400:
                     error_list.append(r400)
+                    client.send(bytes(http + r400 + "\n", "utf8"))
+
                 else:
                     result_list = []
                     for query in msg:
