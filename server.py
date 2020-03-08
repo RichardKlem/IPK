@@ -49,7 +49,7 @@ def accept_incoming_connections():
 
                 elif url_type == "PTR":
                     try:
-                        ip_address(url_name)  # check if IP format is valid
+                        ip_address(url_name)  # only check if IP format is valid
                         try:
                             hostname, _, _ = gethostbyaddr(url_name)
                             header = http + r200
@@ -68,10 +68,12 @@ def accept_incoming_connections():
                 client.send(bytes(http + result, "utf8"))
             else:
                 tmp_msg = msg.split("\n")[7:]
+                if tmp_msg[len(tmp_msg)-1] == "":
+                    tmp_msg.pop()
                 msg = []
                 resultos = 0
                 for line in tmp_msg:
-                    # if the line is fill with whitespaces and/or newline, pop this from list
+                    # if the line is not filled with whitespaces and/or newline, add it to a list
                     res = re.match(r"^\s*\S+.*$", line)
                     if res is not None:
                         msg.append(line)
@@ -116,7 +118,6 @@ def accept_incoming_connections():
 
                     if len(result_list) != 0:
                         client.send(bytes(http + r200 + "\n", "utf8"))
-                        #print("\n...", result_list)
                         for answer in result_list:
                             client.send(bytes(answer, "utf8"))
                     else:
@@ -134,11 +135,5 @@ def accept_incoming_connections():
 
 if __name__ == "__main__":
     SERVER.listen(1)  # Listen for 1 connection
-    #print("Waiting for connection...")
     accept_incoming_connections()
     SERVER.close()
-
-# inet_aton()
-
-
-r"^\w*\.(\w(\-\w)?\.)*\w+$"
