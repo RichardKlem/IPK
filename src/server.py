@@ -1,4 +1,4 @@
-from socket import *
+from socket import gethostbyname_ex, gethostbyaddr, socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from ipaddress import ip_address
 import re
 import sys
@@ -22,7 +22,6 @@ r500 = "500 Internal Server Error\n"
 
 
 def accept_incoming_connections():
-    """Sets up handling for incoming connections"""
     while True:
         client, client_address = SERVER.accept()
         msg = client.recv(BUFSIZ).decode("utf8")
@@ -39,17 +38,21 @@ def accept_incoming_connections():
                 url_type = request_args.group(2)
                 result = r400
                 if url_type == "A":
+                    # když nastane vyjimka, nejedna se o IP a můžeme zkusit najit IP podle jmena
                     try:
-                        _, _, ipaddr_list = gethostbyname_ex(url_name)
-                        header = http + r200
-                        response = url_name + ":" + url_type + "=" + ipaddr_list[0] + "\n"
-                        result = header + "\n" + response
-                    except OSError:
-                        result = r404
+                        ip_address(url_name)
+                    except ValueError:
+                        try:
+                            _, _, ipaddr_list = gethostbyname_ex(url_name)
+                            header = http + r200
+                            response = url_name + ":" + url_type + "=" + ipaddr_list[0] + "\n"
+                            result = header + "\n" + response
+                        except OSError:
+                            result = r404
 
                 elif url_type == "PTR":
                     try:
-                        ip_address(url_name)  # check if IP format is valid
+                        ip_address(url_name)
                         try:
                             hostname, _, _ = gethostbyaddr(url_name)
                             header = http + r200
@@ -60,7 +63,7 @@ def accept_incoming_connections():
                     except ValueError:
                         result = r400
 
-            client.send(bytes(result, "utf8"))
+            client.send(bytes(result + "\n", "utf8"))
 
         elif request == "POST":
             result = r400
@@ -68,10 +71,12 @@ def accept_incoming_connections():
                 client.send(bytes(http + result, "utf8"))
             else:
                 tmp_msg = msg.split("\n")[7:]
+                # Ošetření odřádování na posledním řádku těla seznamu dotazů
+                if tmp_msg[len(tmp_msg)-1] == "":
+                    tmp_msg.pop()
                 msg = []
                 resultos = 0
                 for line in tmp_msg:
-                    # if the line is fill with whitespaces and/or newline, pop this from list
                     res = re.match(r"^\s*\S+.*$", line)
                     if res is not None:
                         msg.append(line)
@@ -82,22 +87,28 @@ def accept_incoming_connections():
                 error_list = []
                 if resultos == 400400:
                     error_list.append(r400)
+                    client.send(bytes(http + r400 + "\n", "utf8"))
+
                 else:
                     result_list = []
                     for query in msg:
-                        request_args = re.match(r"^(\S*)(?:\s*):(?:\s*)(\w*)", query)
+                        request_args = re.match(r"^(\S*)(?:\s*):(?:\s*)(\w*)$", query)
                         if request_args is None:
                             continue
                         url_name = request_args.group(1)
                         url_type = request_args.group(2)
                         if url_type == "A":
+                            # když nastane vyjimka, nejedna se o IP a můžeme zkusit najit IP podle jmena
                             try:
-                                _, _, ipaddr_list = gethostbyname_ex(url_name)
-                                response = url_name + ":" + url_type + "=" + ipaddr_list[0] + "\n"
-                                result_list.append(response)
-                            except OSError:
-                                error_list.append(r404)
-                                continue
+                                ip_address(url_name)
+                            except ValueError:
+                                try:
+                                    _, _, ipaddr_list = gethostbyname_ex(url_name)
+                                    response = url_name + ":" + url_type + "=" + ipaddr_list[0] + "\n"
+                                    result_list.append(response)
+                                except OSError:
+                                    error_list.append(r404)
+                                    continue
                         elif url_type == "PTR":
                             try:
                                 ip_address(url_name)  # check if IP format is valid
@@ -116,29 +127,25 @@ def accept_incoming_connections():
 
                     if len(result_list) != 0:
                         client.send(bytes(http + r200 + "\n", "utf8"))
-                        #print("\n...", result_list)
                         for answer in result_list:
                             client.send(bytes(answer, "utf8"))
                     else:
                         if r400 in error_list:
-                            client.send(bytes(http + r400, "utf8"))
+                            client.send(bytes(http + r400 + "\n", "utf8"))
                         elif r404 in error_list:
-                            client.send(bytes(http + r404, "utf8"))
+                            client.send(bytes(http + r404 + "\n", "utf8"))
                         else:
-                            client.send(bytes(http + r500, "utf8"))
+                            client.send(bytes(http + r500 + "\n", "utf8"))
         else:
-            client.send(bytes(http + r405, "utf8"))
+            client.send(bytes(http + r405 + "\n", "utf8"))
 
         client.close()
 
 
 if __name__ == "__main__":
     SERVER.listen(1)  # Listen for 1 connection
-    #print("Waiting for connection...")
-    accept_incoming_connections()
+    try:
+        accept_incoming_connections()
+    except KeyboardInterrupt:
+        sys.exit()
     SERVER.close()
-
-# inet_aton()
-
-
-r"^\w*\.(\w(\-\w)?\.)*\w+$"
